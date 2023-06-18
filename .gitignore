@@ -1,0 +1,33 @@
+# Erlang
+*.beam
+*.dump
+*.plt
+
+# Erlang generated files
+/ebin/
+/cover/
+/doc/
+/logs/
+/rebar3/
+/_build/
+/rel/
+
+# OTP release artifacts
+/*.tar.gz
+/*.tar.bz2
+/*.zip
+/*.tar.xz
+
+# Build artifacts
+/rebar.lock
+/.rebar/
+/_build/
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.iml
+
+# Dependencies
+/_build/
+/deps/
