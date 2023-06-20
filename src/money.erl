@@ -9,8 +9,8 @@ start(Args) ->
   {ok, BankInfoTerms} = file:consult(BankFile),
 
   % Print the file names
-  io:fwrite("Customer file: ~s~n", [CustomerFile]),
-  io:fwrite("Bank file: ~s~n", [BankFile]),
+  %io:fwrite("Customer file: ~s~n", [CustomerFile]),
+  %io:fwrite("Bank file: ~s~n", [BankFile]),
 
   % Spawn money process
   MasterPID = spawn(fun() -> spawn_master_process(CustomerInfoTerms, BankInfoTerms) end),
