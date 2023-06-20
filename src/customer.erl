@@ -1,6 +1,7 @@
 -module(customer).
--export([process_customer/3]).
+-export([process_customer/5]).
 
-process_customer(Name, LoanNeeded, BankInfo) ->
+process_customer(MasterPID, Pid, Name, LoanNeeded, BankInfo) ->
   PotentialBanks = money:get_potential_banks(LoanNeeded, BankInfo),
-  io:format("~s needs a loan of ~B. Potential banks: ~p~n", [Name, LoanNeeded, PotentialBanks]).
+  Msg = {Pid, Name, LoanNeeded, PotentialBanks},
+  MasterPID ! {process_customer, Msg}.
