@@ -1,7 +1,7 @@
 -module(money).
 -export([start/1]).
 -export([get_potential_banks/2]).
--export([get_customers/1]).
+
 
 start(Args) ->
   CustomerFile = lists:nth(1, Args),
@@ -30,9 +30,6 @@ start(Args) ->
 
 get_potential_banks(_LoanNeeded, BankInfo) ->
   BankInfo.
-
-get_customers(CustomerInfo) ->
-  CustomerInfo.
 
 spawn_master_process(CustomerInfo, BankInfo) ->
   receive
