@@ -3,7 +3,7 @@
 
 process_customer(MasterPID, Name, LoanNeeded, BankInfo) ->
   BankIDs = lists:map(fun({BankName, _}) -> {BankName, whereis(BankName)} end, BankInfo),
-  io:fwrite("Bank IDs: ~p~n", [BankIDs]),
+  io:fwrite("~s knows about ~p IDs~n", [Name, BankIDs]),
   Msg = {Name, LoanNeeded, BankInfo},
   MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
   receive

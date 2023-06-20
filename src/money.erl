@@ -16,7 +16,7 @@ start(Args) ->
   MasterPID = spawn(fun() -> spawn_master_process(CustomerInfoTerms, BankInfoTerms) end),
 
   % Spawn Banks
-  spawn_banks(BankInfoTerms, MasterPID),
+  spawn_banks(BankInfoTerms, MasterPID, CustomerInfoTerms),
   % Spawn Customers
   spawn_customers(CustomerInfoTerms, BankInfoTerms, MasterPID).
 
@@ -52,10 +52,10 @@ spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
     end,
     CustomerInfo).
 
-spawn_banks(BankInfo, MasterPID) ->
+spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
   lists:foreach(
     fun({Name, Lending_amount}) ->
-      BankPID = spawn(bank, process_bank, [MasterPID, Name, Lending_amount]),
+      BankPID = spawn(bank, process_bank, [MasterPID, Name, Lending_amount, CustomerInfo]),
       register(Name, BankPID), % Register the bank process with its name
       io:format("Registered bank process ~p with name ~p~n", [BankPID, Name]) % Print the registration information
     end,
