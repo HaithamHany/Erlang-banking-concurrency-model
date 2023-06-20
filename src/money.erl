@@ -1,6 +1,7 @@
 -module(money).
 -export([start/1]).
 -export([get_potential_banks/2]).
+-export([get_customers/1]).
 
 start(Args) ->
   CustomerFile = lists:nth(1, Args),
@@ -15,11 +16,10 @@ start(Args) ->
   % Spawn money process
   MasterPID = spawn(fun() -> spawn_master_process(CustomerInfoTerms, BankInfoTerms) end),
 
-  % Spawn Customers
-  spawn_customers(CustomerInfoTerms, BankInfoTerms, MasterPID),
-
   % Spawn Banks
-  spawn_banks(BankInfoTerms, MasterPID).
+  spawn_banks(BankInfoTerms, MasterPID),
+  % Spawn Customers
+  spawn_customers(CustomerInfoTerms, BankInfoTerms, MasterPID).
 
 %get_potential_banks(LoanNeeded, BankInfo) ->
 %lists:filter(
@@ -30,6 +30,9 @@ start(Args) ->
 
 get_potential_banks(_LoanNeeded, BankInfo) ->
   BankInfo.
+
+get_customers(CustomerInfo) ->
+  CustomerInfo.
 
 spawn_master_process(CustomerInfo, BankInfo) ->
   receive
@@ -50,7 +53,8 @@ spawn_master_process(CustomerInfo, BankInfo) ->
 spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
   lists:foreach(
     fun({Name, LoanNeeded}) ->
-      spawn(customer, process_customer, [MasterPID, Name, LoanNeeded, BankInfo]),
+      CustomerPID = spawn(customer, process_customer, [MasterPID, Name, LoanNeeded, BankInfo]),
+      register(Name, CustomerPID), % Register the bank process with its name
       timer:sleep(200)
     end,
     CustomerInfo).
@@ -58,8 +62,9 @@ spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
 spawn_banks(BankInfo, MasterPID) ->
   lists:foreach(
     fun({Name, Lending_amount}) ->
-      spawn(bank, process_bank, [MasterPID, Name, Lending_amount])
-      %timer:sleep(200)
+      BankPID = spawn(bank, process_bank, [MasterPID, Name, Lending_amount]),
+      register(Name, BankPID), % Register the bank process with its name
+      io:format("Registered bank process ~p with name ~p~n", [BankPID, Name]) % Print the registration information
     end,
     BankInfo).
 
@@ -67,10 +72,10 @@ spawn_banks(BankInfo, MasterPID) ->
 %FeedBack
 process_customer_feedback(CustomerId, Name, LoanNeeded, BankInfo) ->
   Feedback = io_lib:format("~s needs a loan of ~B. Potential banks: ~p~n", [Name, LoanNeeded, BankInfo]),
-  io:fwrite(Feedback),
-  CustomerId ! {completed, self()}. % Include self() in the completion message
+  io:fwrite(Feedback).
+  %CustomerId ! {completed, self()}. % Include self() in the completion message
 
 process_bank_feedback(BankId, Name, Lending_amount) ->
   Feedback = io_lib:format("~s can lend the amount of ~B~n", [Name, Lending_amount]),
-  io:fwrite(Feedback),
-  BankId ! {completed, self()}.
+  io:fwrite(Feedback).
+  %BankId ! {completed, self()}.
