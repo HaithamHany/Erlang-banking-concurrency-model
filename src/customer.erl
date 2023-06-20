@@ -3,7 +3,7 @@
 
 process_customer(MasterPID, Name, LoanNeeded, BankInfo) ->
   BanksNamesWithIDs = lists:map(fun({BankName, _}) -> {BankName, whereis(BankName)} end, BankInfo),
-  %io:fwrite("~s knows about ~p IDs~n", [Name, BankIDs]),
+  io:fwrite("~s knows about ~p IDs~n", [Name, BankInfo]),
 
   %Random selection of loan and bank
   make_request(Name, BanksNamesWithIDs),
@@ -31,10 +31,11 @@ sleep_random_period() ->
   RandomSleep = rand:uniform(91) + 10,  % Generate a random number between 10 and 100
   timer:sleep(RandomSleep).
 
-
 make_request(Name, BankIDs) ->
   sleep_random_period(),
   RandomLoanAmount = generate_random_loan(),
-  {_, BankPID} = select_random_bank(BankIDs), % Extract BankPID from tuple
-  io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars.~n", [Name, BankPID, RandomLoanAmount]),
-  BankPID ! {loan_request, RandomLoanAmount}.
+
+  {BankName, BankPID} = select_random_bank(BankIDs), % Extract BankName and BankPID from tuple
+  io:fwrite("Ids are ~p selected id ~p ~n", [BankIDs, BankPID]),
+  io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars.~n", [Name, {BankName, BankPID}, RandomLoanAmount]),
+  BankPID ! {loan_request, Name, RandomLoanAmount}. % Include self() as the requester ID

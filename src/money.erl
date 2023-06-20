@@ -17,7 +17,8 @@ start(Args) ->
 
   % Spawn Banks
   spawn_banks(BankInfoTerms, MasterPID, CustomerInfoTerms),
-  % Spawn Customers
+
+% Spawn Customers
   spawn_customers(CustomerInfoTerms, BankInfoTerms, MasterPID).
 
 %get_potential_banks(LoanNeeded, BankInfo) ->
@@ -48,6 +49,7 @@ spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
     fun({Name, LoanNeeded}) ->
       CustomerPID = spawn(customer, process_customer, [MasterPID, Name, LoanNeeded, BankInfo]),
       register(Name, CustomerPID), % Register the bank process with its name
+      io:format("Registered customer process ~p with name ~p~n", [CustomerPID, Name]), % Print the registration information
       timer:sleep(200)
     end,
     CustomerInfo).
@@ -65,10 +67,11 @@ spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
 %FeedBack
 process_customer_feedback(CustomerId, Name, LoanNeeded, BankInfo) ->
   Feedback = io_lib:format("~s needs a loan of ~B. Potential banks: ~p~n", [Name, LoanNeeded, BankInfo]),
-  io:fwrite(Feedback).
+  io:fwrite("").
   %CustomerId ! {completed, self()}. % Include self() in the completion message
 
 process_bank_feedback(BankId, Name, Lending_amount) ->
   Feedback = io_lib:format("~s can lend the amount of ~B~n", [Name, Lending_amount]),
-  io:fwrite(Feedback).
+  io:fwrite("").
   %BankId ! {completed, self()}.
+
