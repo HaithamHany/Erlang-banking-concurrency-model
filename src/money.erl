@@ -1,6 +1,5 @@
 -module(money).
 -export([start/1]).
--export([get_potential_banks/2]).
 
 
 start(Args) ->
@@ -27,9 +26,6 @@ start(Args) ->
 %BankLoan >= LoanNeeded
 %end,
 %BankInfo).
-
-get_potential_banks(_LoanNeeded, BankInfo) ->
-  BankInfo.
 
 spawn_master_process(CustomerInfo, BankInfo) ->
   receive
