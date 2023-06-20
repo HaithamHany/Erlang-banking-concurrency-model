@@ -5,4 +5,8 @@
 
 process_bank(MasterPID, Pid, Name, Loan_to_give) ->
   Msg = {Pid, Name, Loan_to_give},
-  MasterPID ! {process_bank, Msg}.
+  MasterPID ! {process_bank, Msg},
+  receive
+    {completed} ->
+      ok
+  end.
