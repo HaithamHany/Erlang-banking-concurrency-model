@@ -33,20 +33,24 @@ get_potential_banks(_LoanNeeded, BankInfo) ->
 
 spawn_master_process(CustomerInfo, BankInfo) ->
   receive
-    {process_customer, Msg} ->
-      {Pid, Name, LoanNeeded, BankInfo} = Msg,
+    %Customer message
+    {process_customer, Pid, Msg} -> % Include Pid in the pattern
+      {Name, LoanNeeded, BankInfo} = Msg,
       process_customer_feedback(Pid, Name, LoanNeeded, BankInfo),
       spawn_master_process(CustomerInfo, BankInfo);
-    {process_bank, Msg} ->
-      {Pid, Name, Lending_amount} = Msg,
+
+    %Bank Message
+    {process_bank, Pid, Msg} ->
+      {Name, Lending_amount} = Msg,
       process_bank_feedback(Pid, Name, Lending_amount),
       spawn_master_process(CustomerInfo, BankInfo)
   end.
 
+%Process Spawners
 spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
   lists:foreach(
     fun({Name, LoanNeeded}) ->
-      spawn(customer, process_customer, [MasterPID, self(), Name, LoanNeeded, BankInfo]),
+      spawn(customer, process_customer, [MasterPID, Name, LoanNeeded, BankInfo]),
       timer:sleep(200)
     end,
     CustomerInfo).
@@ -54,18 +58,19 @@ spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
 spawn_banks(BankInfo, MasterPID) ->
   lists:foreach(
     fun({Name, Lending_amount}) ->
-      spawn(bank, process_bank, [MasterPID, self(), Name, Lending_amount])
+      spawn(bank, process_bank, [MasterPID, Name, Lending_amount])
       %timer:sleep(200)
     end,
     BankInfo).
 
 
-process_customer_feedback(Pid, Name, LoanNeeded, BankInfo) ->
+%FeedBack
+process_customer_feedback(CustomerId, Name, LoanNeeded, BankInfo) ->
   Feedback = io_lib:format("~s needs a loan of ~B. Potential banks: ~p~n", [Name, LoanNeeded, BankInfo]),
   io:fwrite(Feedback),
-  Pid ! {completed}.
+  CustomerId ! {completed, self()}. % Include self() in the completion message
 
-process_bank_feedback(Pid, Name, Lending_amount) ->
+process_bank_feedback(BankId, Name, Lending_amount) ->
   Feedback = io_lib:format("~s can lend the amount of ~B~n", [Name, Lending_amount]),
   io:fwrite(Feedback),
-  Pid ! {completed}.
+  BankId ! {completed, self()}.

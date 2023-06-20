@@ -1,11 +1,12 @@
 -module(customer).
--export([process_customer/5]).
+-export([process_customer/4]).
 
-process_customer(MasterPID, Pid, Name, LoanNeeded, BankInfo) ->
+process_customer(MasterPID, Name, LoanNeeded, BankInfo) ->
   PotentialBanks = money:get_potential_banks(LoanNeeded, BankInfo),
-  Msg = {Pid, Name, LoanNeeded, PotentialBanks},
-  MasterPID ! {process_customer, Msg},
+  Msg = {Name, LoanNeeded, PotentialBanks},
+  MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
   receive
-    {completed} ->
+    {completed, CustomerID} ->
+      io:fwrite("Customer ~s [~p] completed.~n", [Name, CustomerID]),
       ok
   end.
