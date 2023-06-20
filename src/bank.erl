@@ -13,5 +13,6 @@ process_bank(MasterPID, Name, Loan_to_give, CustomerInfo) ->
       % Process the loan request and send the response
       % ...
       % Assuming the loan request is processed successfully and completed
-      io:fwrite("Bank ~s [~p] completed request processing.~n", [Name, Name])
+      io:fwrite("Bank ~s [~p] completed request processing.~n", [Name, Name]),
+      process_bank(MasterPID, Name, Loan_to_give, CustomerInfo)
   end.
