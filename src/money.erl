@@ -33,14 +33,24 @@ master_process(CustomerInfo) ->
     %Customer message
     {process_customer, Pid, Msg} -> % Include Pid in the pattern
       {Name, LoanNeeded, BankName} = Msg,
-      process_customer_feedback(Pid, Name, LoanNeeded, BankName),
+      io:format("[MASTER FEEDBACK CUSTOMER] ~s requested a loan of $~B. from bank: ~p~n", [Name, LoanNeeded, BankName]),
+      master_process(CustomerInfo);
+
+    {process_customer_rejected, Pid, Msg} -> % Include Pid in the pattern
+      {Name, LoanNeeded, RejectedBankName} = Msg,
+      io:format("[MASTER FEEDBACK CUSTOMER] ~s rejected a loan request of $~B from customer: ~p~n", [RejectedBankName, LoanNeeded, Name]),
       master_process(CustomerInfo);
 
     %Bank Message
     {process_bank, Pid, Msg} ->
-      {BankName, Lending_amount, CustomerName} = Msg,
-      process_bank_feedback(BankName, Lending_amount, CustomerName),
+      {CustomerName, NeededLoanAmount, BankName} = Msg,
+      io:format("[MASTER FEEDBACK BANK] The ~s bank granted amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
+      master_process(CustomerInfo);
+    {process_bank_rejected, Pid, Msg} ->
+      {CustomerName, NeededLoanAmount, BankName} = Msg,
+      io:format("[MASTER FEEDBACK BANK] The ~s bank denied amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       master_process(CustomerInfo)
+
   end.
 
 %Process Spawners
@@ -63,15 +73,4 @@ spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
     end,
     BankInfo).
 
-
-%FeedBack
-process_customer_feedback(CustomerId, Name, LoanNeeded, BankName) ->
-  Feedback = io_lib:format("[MASTER FEEDBACK CUSTOMER] ~s needs a loan of $~B. from bank: ~p~n", [Name, LoanNeeded, BankName]),
-  io:format("~s", [Feedback]). % Print the feedback
-  %CustomerId ! {completed, self()}. % Include self() in the completion message
-
-process_bank_feedback(BankName, Lending_amount, CustomerName) ->
-  Feedback = io_lib:format("[MASTER FEEDBACK BANK] ~s Can lend amount of $~B. to customer: ~p~n", [BankName, Lending_amount, CustomerName]),
-  io:format("~s", [Feedback]).
-  %BankId ! {completed, self()}.
 

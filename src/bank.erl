@@ -20,12 +20,20 @@ process_bank(MasterPID, BankName, AvailableResources, Total_Loan, CustomerInfo) 
           io:fwrite("[RESOURCE CALCULATION] Bank ~s granted loan to customer ~s of $~p  remaining resources of the bank are ~B dollars.~n", [BankName, CustomerName, NeededLoanAmount, NewBankResources]),
           % Sending customer a loan request accepted message
           CustomerID ! {loan_request_accepted, self()},
+
+          Msg = {CustomerName, NeededLoanAmount, BankName},
+          MasterPID ! {process_bank, self(), Msg}, % Include self() in the message
+
           process_bank(MasterPID, BankName, NewBankResources, Total_Loan, CustomerInfo); % Continue processing requests
 
         false -> % Loan cannot be granted
           io:fwrite("Bank [~s] rejected the loan request from customer ~s. Insufficient resources.~n", [BankName, CustomerName]),
           % Sending customer a loan request rejected message
           CustomerID ! {loan_request_rejected, self()},
+
+          Msg = {CustomerName, NeededLoanAmount, BankName},
+          MasterPID ! {process_bank_rejected, self(), Msg}, % Include self() in the message
+
           process_bank(MasterPID, BankName, BankResources, Total_Loan, CustomerInfo) % Continue processing requests
       end;
 
