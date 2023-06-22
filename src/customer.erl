@@ -43,10 +43,10 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID) ->
   Msg = {Name, MaxLoanAmount, BankName},
   MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
 
-  process_request(Name, BankIDs, NewLoanNeeded,MasterPID).
+  process_request(Name, BankIDs, NewLoanNeeded, MasterPID, BankName).
 
 
-process_request(Name, BankIDs, LoanNeeded, MasterPID) ->
+process_request(Name, BankIDs, LoanNeeded, MasterPID, RejectedBankName) ->
   receive
     {loan_request_accepted, CustomerID} ->
       io:fwrite("~s has an objective of ~p~n", [Name, LoanNeeded]),
@@ -55,10 +55,13 @@ process_request(Name, BankIDs, LoanNeeded, MasterPID) ->
           ok;
         _ -> % Loan objective not met, make another request
           make_request(Name, BankIDs, LoanNeeded, MasterPID)
-      end,
-      process_request(Name, BankIDs, LoanNeeded, MasterPID);
+      end;
     {loan_request_rejected, CustomerID} ->
-      io:fwrite("~s's loan request was rejected. Making another request.~n", [Name]),
-      %make_request(Name, BankIDs, LoanNeeded, MasterPID),
-      process_request(Name, BankIDs, LoanNeeded, MasterPID)
+      io:fwrite("~s's loan request was rejected by ~p Making another request.~n", [Name, RejectedBankName]),
+      UpdatedBankIDs = remove_rejected_bank(BankIDs, RejectedBankName),
+      io:fwrite("Updated bank IDs: ~p~n", [UpdatedBankIDs]),
+      make_request(Name, UpdatedBankIDs, LoanNeeded, MasterPID)
   end.
+
+remove_rejected_bank(BankIDs, RejectedBankName) ->
+  lists:filter(fun({BankName, _}) -> BankName /= RejectedBankName end, BankIDs).
