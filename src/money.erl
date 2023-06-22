@@ -13,7 +13,7 @@ start(Args) ->
   %io:fwrite("Bank file: ~s~n", [BankFile]),
 
   % Spawn money process
-  MasterPID = spawn(fun() -> spawn_master_process(CustomerInfoTerms, BankInfoTerms) end),
+  MasterPID = spawn(fun() -> master_process(CustomerInfoTerms) end),
 
   % Spawn Banks
   spawn_banks(BankInfoTerms, MasterPID, CustomerInfoTerms),
@@ -28,19 +28,19 @@ start(Args) ->
 %end,
 %BankInfo).
 
-spawn_master_process(CustomerInfo, BankInfo) ->
+master_process(CustomerInfo) ->
   receive
     %Customer message
     {process_customer, Pid, Msg} -> % Include Pid in the pattern
-      {Name, LoanNeeded, BankInfo} = Msg,
-      process_customer_feedback(Pid, Name, LoanNeeded, BankInfo),
-      spawn_master_process(CustomerInfo, BankInfo);
+      {Name, LoanNeeded, BankName} = Msg,
+      process_customer_feedback(Pid, Name, LoanNeeded, BankName),
+      master_process(CustomerInfo);
 
     %Bank Message
     {process_bank, Pid, Msg} ->
-      {Name, Lending_amount} = Msg,
-      process_bank_feedback(Pid, Name, Lending_amount),
-      spawn_master_process(CustomerInfo, BankInfo)
+      {BankName, Lending_amount, CustomerName} = Msg,
+      process_bank_feedback(BankName, Lending_amount, CustomerName),
+      master_process(CustomerInfo)
   end.
 
 %Process Spawners
@@ -65,13 +65,13 @@ spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
 
 
 %FeedBack
-process_customer_feedback(CustomerId, Name, LoanNeeded, BankInfo) ->
-  %Feedback = io_lib:format("~s needs a loan of ~B. Potential banks: ~p~n", [Name, LoanNeeded, BankInfo]),
-  io:fwrite("").
+process_customer_feedback(CustomerId, Name, LoanNeeded, BankName) ->
+  Feedback = io_lib:format("[MASTER FEEDBACK CUSTOMER] ~s needs a loan of $~B. from bank: ~p~n", [Name, LoanNeeded, BankName]),
+  io:format("~s", [Feedback]). % Print the feedback
   %CustomerId ! {completed, self()}. % Include self() in the completion message
 
-process_bank_feedback(BankId, Name, Lending_amount) ->
-  %Feedback = io_lib:format("~s can lend the amount of ~B~n", [Name, Lending_amount]),
-  io:fwrite("").
+process_bank_feedback(BankName, Lending_amount, CustomerName) ->
+  Feedback = io_lib:format("[MASTER FEEDBACK BANK] ~s Can lend amount of $~B. to customer: ~p~n", [BankName, Lending_amount, CustomerName]),
+  io:format("~s", [Feedback]).
   %BankId ! {completed, self()}.
 
