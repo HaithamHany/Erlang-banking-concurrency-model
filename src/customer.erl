@@ -38,7 +38,7 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID) ->
   BankPID ! {loan_request, Name, RandomLoanAmount},
 
   %sending Master
-  Msg = {Name, LoanNeeded, BankName},
+  Msg = {Name, RandomLoanAmount, BankName},
   MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
 
   process_request(Name, BankIDs, NewLoanNeeded,MasterPID).
@@ -56,6 +56,6 @@ process_request(Name, BankIDs, LoanNeeded, MasterPID) ->
       process_request(Name, BankIDs, LoanNeeded, MasterPID);
     {loan_request_rejected, CustomerID} ->
       io:fwrite("~s's loan request was rejected. Making another request.~n", [Name]),
-      make_request(Name, BankIDs, LoanNeeded, MasterPID),
+      %make_request(Name, BankIDs, LoanNeeded, MasterPID),
       process_request(Name, BankIDs, LoanNeeded, MasterPID)
   end.
