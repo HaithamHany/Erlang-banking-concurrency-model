@@ -28,20 +28,23 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID) ->
   sleep_random_period(),
   RandomLoanAmount = generate_random_loan(),
 
-  RemainingLoan = LoanNeeded - RandomLoanAmount,
+  MaxLoanAmount = min(RandomLoanAmount, LoanNeeded),
+
+  RemainingLoan = LoanNeeded - MaxLoanAmount,
   NewLoanNeeded = if RemainingLoan < 0 -> 0; true -> RemainingLoan end,
 
   {BankName, BankPID} = select_random_bank(BankIDs),
   io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars. Remaining Loan Needed: ~B~n", [Name, {BankName, BankPID}, RandomLoanAmount, NewLoanNeeded]),
 
   %sendingBnak
-  BankPID ! {loan_request, Name, RandomLoanAmount},
+  BankPID ! {loan_request, Name, MaxLoanAmount},
 
   %sending Master
-  Msg = {Name, RandomLoanAmount, BankName},
+  Msg = {Name, MaxLoanAmount, BankName},
   MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
 
   process_request(Name, BankIDs, NewLoanNeeded,MasterPID).
+
 
 process_request(Name, BankIDs, LoanNeeded, MasterPID) ->
   receive
