@@ -34,6 +34,7 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID, OriginalObjective) ->
   NewRemainingLoan = if RemainingLoan < 0 -> 0; true -> RemainingLoan end,
 
   {BankName, BankPID} = select_random_bank(BankIDs),
+  io:fwrite("~s has an objective of ~p~n", [Name, NewRemainingLoan]),
   io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars. Remaining Loan Needed: ~B~n", [Name, {BankName, BankPID}, RandomLoanAmount, NewRemainingLoan]),
 
   %sendingBnak
@@ -49,12 +50,12 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID, OriginalObjective) ->
 process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, RequestedAmount, OriginalObjective) ->
   receive
     {loan_request_accepted, CustomerID} ->
-      io:fwrite("~s has an objective of ~p~n", [Name, TotalLoanNeeded]),
+      %io:fwrite("~s has an objective of ~p~n", [Name, TotalLoanNeeded]),
       case TotalLoanNeeded of
         0 -> % Loan objective met
           io:fwrite("OBJECTIVE MET FOR ~p~n", [Name]),
           AmountTakenSoFar = OriginalObjective - TotalLoanNeeded,
-          Msg = {Name, AmountTakenSoFar},
+          Msg = {Name, AmountTakenSoFar, OriginalObjective},
           MasterPID ! {customer_done, self(), Msg}, % Include self() in the me
           ok;
         _ -> % Loan objective not met, make another request
@@ -76,7 +77,7 @@ process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, Req
           io:fwrite("ORIGINAL OBJECTIVE ~p~n", [OriginalObjective]),
           io:fwrite("TOTAL OAD NEEDED ~p~n", [TotalLoanNeeded]),
           AmountTakenSoFar = OriginalObjective - TotalLoanNeeded,
-          CustomerData = {Name, AmountTakenSoFar},
+          CustomerData = {Name, AmountTakenSoFar, OriginalObjective},
           MasterPID ! {customer_done, self(), CustomerData}, % Include self() in the message
           ok;
         _ -> % Make another request with updated bank list

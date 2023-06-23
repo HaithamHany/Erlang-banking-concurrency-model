@@ -43,7 +43,7 @@ master_process(CustomerInfo, CustomersDoneList) ->
       master_process(CustomerInfo, CustomersDoneList);
 
     {customer_done, Pid, Msg} ->
-      {Name, AmountTakenSoFar} = Msg,
+      {Name, AmountTakenSoFar, OriginalObjective} = Msg,
       UpdatedCustomers = [Msg | CustomersDoneList],
       io:fwrite("~p IS THE CURRENT UPDATED CUSTOMERS.~n", [UpdatedCustomers]),
       io:format("~p IS THE CURRENT UPDATED CUSTOMERS COUNT.~n", [length(UpdatedCustomers)]),
@@ -52,9 +52,10 @@ master_process(CustomerInfo, CustomersDoneList) ->
       case length(UpdatedCustomers) == length(CustomerInfo) of
         true ->
           io:format("SIMULATION DONE!~n"),
+          generate_report(UpdatedCustomers),
           ok;
-          false ->
-            master_process(CustomerInfo, UpdatedCustomers)
+        false ->
+          master_process(CustomerInfo, UpdatedCustomers)
       end;
 
 
@@ -93,34 +94,29 @@ spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
     end,
     BankInfo).
 
-check_simulation_completion(CustomerDataList, OriginalCustomerList) ->
-  case length(CustomerDataList) == 3 of
-    true ->
-      io:format("SIMULATION DONE!"),
-      ok  % All customers have been processed
-  end.
 
-generate_report(CustomerList) ->
-  {TotalObjective, TotalReceived} = calculate_totals(CustomerList),
-  print_report(CustomerList, TotalObjective, TotalReceived).
+generate_report(CustomerDataList) ->
+  io:fwrite("~p DATALIST.~n", [CustomerDataList]),
+  {TotalObjective, TotalReceived, OriginalObjective} = calculate_totals(CustomerDataList),
+  print_report(CustomerDataList, TotalObjective, TotalReceived, OriginalObjective).
 
-calculate_totals(CustomerList) ->
+calculate_totals(CustomerDataList) ->
   lists:foldl(
-    fun({_, Objective, Received}, {TotalObj, TotalRecv}) ->
-      {TotalObj + Objective, TotalRecv + Received}
+    fun({_, AmountTakenSoFar, OriginalObjective}, {TotalObjective, TotalReceived, TotalOriginalObjective}) ->
+      {TotalObjective + AmountTakenSoFar, TotalReceived + AmountTakenSoFar, TotalOriginalObjective + OriginalObjective}
     end,
-    {0, 0},
-    CustomerList
+    {0, 0, 0},
+    CustomerDataList
   ).
 
-print_report(CustomerList, TotalObjective, TotalReceived) ->
+print_report(CustomerDataList, TotalObjective, TotalReceived, OriginalObjective) ->
   io:format("Customers:~n"),
-  print_customers(CustomerList),
+  print_customers(CustomerDataList),
   io:format("-----~n"),
-  io:format("Total: objective ~B, received ~B~n", [TotalObjective, TotalReceived]).
+  io:format("Total: objective ~B, received ~B~n", [OriginalObjective, TotalObjective]).
 
 print_customers([]) ->
   ok;
-print_customers([{Name, Objective, Received} | Rest]) ->
-  io:format("~s: objective ~B, received ~B~n", [Name, Objective, Received]),
+print_customers([{Name, AmountTakenSoFar, OriginalObjective} | Rest]) ->
+  io:format("~s: objective ~B, received ~B~n", [Name, OriginalObjective, AmountTakenSoFar]),
   print_customers(Rest).
