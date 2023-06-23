@@ -11,9 +11,9 @@ start(Args) ->
   % Print the file names
   %io:fwrite("Customer file: ~s~n", [CustomerFile]),
   %io:fwrite("Bank file: ~s~n", [BankFile]),
-
+  CustomersDoneList = [],
   % Spawn money process
-  MasterPID = spawn(fun() -> master_process(CustomerInfoTerms) end),
+  MasterPID = spawn(fun() -> master_process(CustomerInfoTerms, CustomersDoneList) end),
 
   % Spawn Banks
   spawn_banks(BankInfoTerms, MasterPID, CustomerInfoTerms),
@@ -28,31 +28,48 @@ start(Args) ->
 %end,
 %BankInfo).
 
-master_process(CustomerInfo) ->
+master_process(CustomerInfo, CustomersDoneList) ->
   receive
     %Customer message
     {process_customer, Pid, Msg} -> % Include Pid in the pattern
       {Name, LoanNeeded, BankName} = Msg,
       %io:format("[MASTER FEEDBACK CUSTOMER] ~s requested a loan of $~B. from bank: ~p~n", [Name, LoanNeeded, BankName]),
       io:fwrite("? ~s requests a loan of ~B dollar(s) from the ~s bank~n", [Name, LoanNeeded, BankName]),
-      master_process(CustomerInfo);
+      master_process(CustomerInfo, CustomersDoneList);
 
     {process_customer_rejected, Pid, Msg} -> % Include Pid in the pattern
       {Name, LoanNeeded, RejectedBankName} = Msg,
       io:format("[MASTER FEEDBACK CUSTOMER] ~s rejected a loan request of $~B from customer: ~p~n", [RejectedBankName, LoanNeeded, Name]),
-      master_process(CustomerInfo);
+      master_process(CustomerInfo, CustomersDoneList);
+
+    {customer_done, Pid, Msg} ->
+      {Name, AmountTakenSoFar} = Msg,
+      UpdatedCustomers = [Msg | CustomersDoneList],
+      io:fwrite("~p IS THE CURRENT UPDATED CUSTOMERS.~n", [UpdatedCustomers]),
+      io:format("~p IS THE CURRENT UPDATED CUSTOMERS COUNT.~n", [length(UpdatedCustomers)]),
+      io:format("~p IS THE CURRENT UPDATED CUSTOMERSINFO COUNT.~n", [length(CustomerInfo)]),
+
+      case length(UpdatedCustomers) == length(CustomerInfo) of
+        true ->
+          io:format("SIMULATION DONE!~n"),
+          ok;
+          false ->
+            master_process(CustomerInfo, UpdatedCustomers)
+      end;
+
+
 
     %Bank Message
     {process_bank, Pid, Msg} ->
       {CustomerName, NeededLoanAmount, BankName} = Msg,
       %io:format("[MASTER FEEDBACK BANK] The ~s bank granted amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       io:format("$ The ~s bank approves a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
-      master_process(CustomerInfo);
+      master_process(CustomerInfo, CustomersDoneList);
     {process_bank_rejected, Pid, Msg} ->
       {CustomerName, NeededLoanAmount, BankName} = Msg,
       %io:format("[MASTER FEEDBACK BANK] The ~s bank denied amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       io:format("$ The ~s bank denies a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
-      master_process(CustomerInfo)
+      master_process(CustomerInfo, CustomersDoneList)
 
   end.
 
@@ -76,4 +93,34 @@ spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
     end,
     BankInfo).
 
+check_simulation_completion(CustomerDataList, OriginalCustomerList) ->
+  case length(CustomerDataList) == 3 of
+    true ->
+      io:format("SIMULATION DONE!"),
+      ok  % All customers have been processed
+  end.
 
+generate_report(CustomerList) ->
+  {TotalObjective, TotalReceived} = calculate_totals(CustomerList),
+  print_report(CustomerList, TotalObjective, TotalReceived).
+
+calculate_totals(CustomerList) ->
+  lists:foldl(
+    fun({_, Objective, Received}, {TotalObj, TotalRecv}) ->
+      {TotalObj + Objective, TotalRecv + Received}
+    end,
+    {0, 0},
+    CustomerList
+  ).
+
+print_report(CustomerList, TotalObjective, TotalReceived) ->
+  io:format("Customers:~n"),
+  print_customers(CustomerList),
+  io:format("-----~n"),
+  io:format("Total: objective ~B, received ~B~n", [TotalObjective, TotalReceived]).
+
+print_customers([]) ->
+  ok;
+print_customers([{Name, Objective, Received} | Rest]) ->
+  io:format("~s: objective ~B, received ~B~n", [Name, Objective, Received]),
+  print_customers(Rest).
