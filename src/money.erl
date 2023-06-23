@@ -33,7 +33,8 @@ master_process(CustomerInfo) ->
     %Customer message
     {process_customer, Pid, Msg} -> % Include Pid in the pattern
       {Name, LoanNeeded, BankName} = Msg,
-      io:format("[MASTER FEEDBACK CUSTOMER] ~s requested a loan of $~B. from bank: ~p~n", [Name, LoanNeeded, BankName]),
+      %io:format("[MASTER FEEDBACK CUSTOMER] ~s requested a loan of $~B. from bank: ~p~n", [Name, LoanNeeded, BankName]),
+      io:fwrite("? ~s requests a loan of ~B dollar(s) from the ~s bank~n", [Name, LoanNeeded, BankName]),
       master_process(CustomerInfo);
 
     {process_customer_rejected, Pid, Msg} -> % Include Pid in the pattern
@@ -44,11 +45,13 @@ master_process(CustomerInfo) ->
     %Bank Message
     {process_bank, Pid, Msg} ->
       {CustomerName, NeededLoanAmount, BankName} = Msg,
-      io:format("[MASTER FEEDBACK BANK] The ~s bank granted amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
+      %io:format("[MASTER FEEDBACK BANK] The ~s bank granted amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
+      io:format("$ The ~s bank approves a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       master_process(CustomerInfo);
     {process_bank_rejected, Pid, Msg} ->
       {CustomerName, NeededLoanAmount, BankName} = Msg,
-      io:format("[MASTER FEEDBACK BANK] The ~s bank denied amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
+      %io:format("[MASTER FEEDBACK BANK] The ~s bank denied amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
+      io:format("$ The ~s bank denies a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       master_process(CustomerInfo)
 
   end.

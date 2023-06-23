@@ -52,6 +52,7 @@ process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, Req
       io:fwrite("~s has an objective of ~p~n", [Name, TotalLoanNeeded]),
       case TotalLoanNeeded of
         0 -> % Loan objective met
+          io:fwrite("OBJECTIVE MET FOR ~p~n", [Name]),
           ok;
         _ -> % Loan objective not met, make another request
           make_request(Name, BankIDs, TotalLoanNeeded, MasterPID)
@@ -65,7 +66,14 @@ process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, Req
 
       UpdatedBankIDs = remove_rejected_bank(BankIDs, RejectedBankName),
       io:fwrite("Updated bank IDs: ~p~n", [UpdatedBankIDs]),
-      make_request(Name, UpdatedBankIDs, TotalLoanNeeded, MasterPID)
+
+      case UpdatedBankIDs of
+        [] -> % No more banks available
+          io:fwrite("NO MORE BANKS FOR ~p~n", [Name]),
+          ok;
+        _ -> % Make another request with updated bank list
+          make_request(Name, UpdatedBankIDs, TotalLoanNeeded, MasterPID)
+      end
   end.
 
 remove_rejected_bank(BankIDs, RejectedBankName) ->
