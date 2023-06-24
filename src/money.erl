@@ -10,9 +10,6 @@ start(Args) ->
 
   NewBankInfoTerms = lists:map(fun({BankName, Amount}) -> {BankName, 0, Amount} end, BankInfoTerms),
 
-  % Print the file names
-  %io:fwrite("Customer file: ~s~n", [CustomerFile]),
-  %io:fwrite("Bank file: ~s~n", [BankFile]),
   CustomersDoneList = [],
   % Spawn money process
   MasterPID = spawn(fun() -> master_process(CustomerInfoTerms, CustomersDoneList, [], NewBankInfoTerms) end),
@@ -23,12 +20,6 @@ start(Args) ->
 % Spawn Customers
   spawn_customers(CustomerInfoTerms, BankInfoTerms, MasterPID).
 
-%get_potential_banks(LoanNeeded, BankInfo) ->
-%lists:filter(
-%fun({_BankName, BankLoan}) ->
-%BankLoan >= LoanNeeded
-%end,
-%BankInfo).
 
 master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
   receive
@@ -41,19 +32,16 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
 
     {process_customer_rejected, Pid, Msg} -> % Include Pid in the pattern
       {Name, LoanNeeded, RejectedBankName} = Msg,
-      io:format("[MASTER FEEDBACK CUSTOMER] ~s rejected a loan request of $~B from customer: ~p~n", [RejectedBankName, LoanNeeded, Name]),
+      %io:format("[MASTER FEEDBACK CUSTOMER] ~s rejected a loan request of $~B from customer: ~p~n", [RejectedBankName, LoanNeeded, Name]),
       master_process(CustomerInfo, CustomersDoneList, BankLoanAcc ,BankInfoTerms);
 
     {customer_done, Pid, Msg} ->
       {Name, AmountTakenSoFar, OriginalObjective} = Msg,
       UpdatedCustomers = [Msg | CustomersDoneList],
-      io:fwrite("~p IS THE CURRENT UPDATED CUSTOMERS.~n", [UpdatedCustomers]),
-      io:format("~p IS THE CURRENT UPDATED CUSTOMERS COUNT.~n", [length(UpdatedCustomers)]),
-      io:format("~p IS THE CURRENT UPDATED CUSTOMERSINFO COUNT.~n", [length(CustomerInfo)]),
 
       case length(UpdatedCustomers) == length(CustomerInfo) of
         true ->
-          io:format("SIMULATION DONE!~n"),
+          %io:format("SIMULATION DONE!~n"),
           NewBankList = lists:foldl(
             fun(Tuple, Acc) ->
               case lists:keyfind(element(1, Tuple), 1, Acc) of
@@ -64,7 +52,6 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
             BankLoanAcc,
             BankInfoTerms
           ),
-          io:fwrite("~p IS THE NEW LIST.~n", [NewBankList]),
           generate_report(UpdatedCustomers, NewBankList),
           ok;
         false ->
@@ -76,11 +63,9 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
   %Bank Message
     {process_bank, Pid, Msg} ->
       {CustomerName, NeededLoanAmount, BankName, OriginalAmount} = Msg,
-      io:format(" ORIGINAL ! AMOUNT !!!!~p~n", [OriginalAmount]),
       %io:format("[MASTER FEEDBACK BANK] The ~s bank granted amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       io:format("$ The ~s bank approves a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       NewBankLoanAcc = update_bank_loan_acc(BankLoanAcc, BankName, NeededLoanAmount, OriginalAmount),
-      io:format(" AGGREGATED BANK DATA ~p~n", [NewBankLoanAcc]),
       master_process(CustomerInfo, CustomersDoneList, NewBankLoanAcc,BankInfoTerms);
 
 
@@ -104,7 +89,6 @@ spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
     fun({Name, LoanNeeded}) ->
       CustomerPID = spawn(customer, process_customer, [MasterPID, Name, LoanNeeded, BankInfo]),
       register(Name, CustomerPID), % Register the bank process with its name
-      %io:format("Registered customer process ~p with name ~p~n", [CustomerPID, Name]), % Print the registration information
       timer:sleep(200)
     end,
     CustomerInfo).
@@ -114,7 +98,6 @@ spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
     fun({Name, Lending_amount}) ->
       BankPID = spawn(bank, process_bank, [MasterPID, Name, Lending_amount, CustomerInfo]),
       register(Name, BankPID) % Register the bank process with its name
-    %io:format("Registered bank process ~p with name ~p~n", [BankPID, Name]) % Print the registration information
     end,
     BankInfo).
 
