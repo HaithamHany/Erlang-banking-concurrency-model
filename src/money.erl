@@ -10,6 +10,10 @@ start(Args) ->
 
   NewBankInfoTerms = lists:map(fun({BankName, Amount}) -> {BankName, 0, Amount} end, BankInfoTerms),
 
+  io:fwrite("** The financial market is opening for the day **~n"),
+  io:fwrite("Starting transaction log...~n"),
+  io:fwrite("~n"),
+
   CustomersDoneList = [],
   % Spawn money process
   MasterPID = spawn(fun() -> master_process(CustomerInfoTerms, CustomersDoneList, [], NewBankInfoTerms) end),
@@ -126,10 +130,12 @@ calculate_bank_totals(BankLoanAcc) ->
   ).
 
 print_report(CustomerDataList, BankLoanAcc, TotalObjective, TotalReceived, OriginalObjective, TotalOriginalLoan, TotalLoaned) ->
+  io:fwrite("~n"),
   io:format("Customers:~n"),
   print_customers(CustomerDataList),
   io:format("-----~n"),
   io:format("Total: objective ~B, received ~B~n", [TotalObjective, TotalReceived]),
+  io:fwrite("~n"),
   io:format("Banks:~n"),
   print_banks(BankLoanAcc),
   io:format("-----~n"),
