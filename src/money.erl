@@ -13,6 +13,7 @@ start(Args) ->
   io:fwrite("** The financial market is opening for the day **~n"),
   io:fwrite("Starting transaction log...~n"),
   io:fwrite("~n"),
+  timer:sleep(500),
 
   CustomersDoneList = [],
   % Spawn money process
@@ -130,6 +131,8 @@ calculate_bank_totals(BankLoanAcc) ->
   ).
 
 print_report(CustomerDataList, BankLoanAcc, TotalObjective, TotalReceived, OriginalObjective, TotalOriginalLoan, TotalLoaned) ->
+  io:fwrite("~n"),
+  io:format("** Banking Report **:~n"),
   io:fwrite("~n"),
   io:format("Customers:~n"),
   print_customers(CustomerDataList),
