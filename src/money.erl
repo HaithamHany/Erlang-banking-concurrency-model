@@ -62,10 +62,11 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc) ->
 
   %Bank Message
     {process_bank, Pid, Msg} ->
-      {CustomerName, NeededLoanAmount, BankName} = Msg,
+      {CustomerName, NeededLoanAmount, BankName, OriginalAmount} = Msg,
+      io:format(" ORIGINAL ! AMOUNT !!!!~p~n", [OriginalAmount]),
       %io:format("[MASTER FEEDBACK BANK] The ~s bank granted amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       io:format("$ The ~s bank approves a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
-      NewBankLoanAcc = update_bank_loan_acc(BankLoanAcc, BankName, NeededLoanAmount),
+      NewBankLoanAcc = update_bank_loan_acc(BankLoanAcc, BankName, NeededLoanAmount, OriginalAmount),
       io:format(" AGGREGATED BANK DATA ~p~n", [NewBankLoanAcc]),
       master_process(CustomerInfo, CustomersDoneList, NewBankLoanAcc);
 
@@ -78,10 +79,10 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc) ->
 
   end.
 
-update_bank_loan_acc(BankLoanAcc, BankName, Amount) ->
+update_bank_loan_acc(BankLoanAcc, BankName, Amount, OriginalAmount) ->
   case lists:keyfind(BankName, 1, BankLoanAcc) of
-    false -> [{BankName, Amount} | BankLoanAcc];
-    {BankName, AccAmount} -> lists:keyreplace(BankName, 1, BankLoanAcc, {BankName, AccAmount + Amount})
+    false -> [{BankName, Amount, OriginalAmount} | BankLoanAcc];
+    {BankName, AccAmount, OrigAmount} -> lists:keyreplace(BankName, 1, BankLoanAcc, {BankName, AccAmount + Amount, OrigAmount})
   end.
 
 %Process Spawners

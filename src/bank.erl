@@ -21,7 +21,8 @@ process_bank(MasterPID, BankName, AvailableResources, Total_Loan, CustomerInfo) 
           % Sending customer a loan request accepted message
           CustomerID ! {loan_request_accepted, self()},
 
-          Msg = {CustomerName, NeededLoanAmount, BankName},
+          OriginalAmount = Total_Loan,
+          Msg = {CustomerName, NeededLoanAmount, BankName, OriginalAmount},
           MasterPID ! {process_bank, self(), Msg}, % Include self() in the message
 
           process_bank(MasterPID, BankName, NewBankResources, Total_Loan, CustomerInfo); % Continue processing requests
