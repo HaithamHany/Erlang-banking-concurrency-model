@@ -30,12 +30,9 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID, OriginalObjective) ->
 
   MaxLoanAmount = min(RandomLoanAmount, LoanNeeded),
 
-  RemainingLoan = LoanNeeded - MaxLoanAmount,
-  NewRemainingLoan = if RemainingLoan < 0 -> 0; true -> RemainingLoan end,
-
   {BankName, BankPID} = select_random_bank(BankIDs),
-  io:fwrite("~s has an objective of ~p~n", [Name, NewRemainingLoan]),
-  io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars. Remaining Loan Needed: ~B~n", [Name, {BankName, BankPID}, RandomLoanAmount, NewRemainingLoan]),
+  %io:fwrite("~s has an objective of ~p~n", [Name, LoanNeeded]),
+  io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars. Remaining Loan Needed: ~B~n", [Name, {BankName, BankPID}, MaxLoanAmount, LoanNeeded - MaxLoanAmount]),
 
   %sendingBnak
   BankPID ! {loan_request, Name, MaxLoanAmount},
@@ -44,7 +41,7 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID, OriginalObjective) ->
   Msg = {Name, MaxLoanAmount, BankName},
   MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
 
-  process_request(Name, BankIDs, NewRemainingLoan, MasterPID, BankName, MaxLoanAmount, OriginalObjective).
+  process_request(Name, BankIDs, LoanNeeded, MasterPID, BankName, MaxLoanAmount, OriginalObjective).
 
 
 process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, RequestedAmount, OriginalObjective) ->
@@ -59,7 +56,9 @@ process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, Req
           MasterPID ! {customer_done, self(), Msg}, % Include self() in the me
           ok;
         _ -> % Loan objective not met, make another request
-          make_request(Name, BankIDs, TotalLoanNeeded, MasterPID, OriginalObjective)
+          RemainingLoan = TotalLoanNeeded - RequestedAmount,
+          NewRemainingLoan = if RemainingLoan < 0 -> 0; true -> RemainingLoan end,
+          make_request(Name, BankIDs, NewRemainingLoan, MasterPID, OriginalObjective)
       end;
     {loan_request_rejected, CustomerID} ->
       io:fwrite("~s's loan request was rejected by ~p Making another request.~n", [Name, RejectedBankName]),
