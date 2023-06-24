@@ -30,7 +30,7 @@ start(Args) ->
 
 master_process(CustomerInfo, CustomersDoneList, BankLoanAcc) ->
   receive
-    %Customer message
+  %Customer message
     {process_customer, Pid, Msg} -> % Include Pid in the pattern
       {Name, LoanNeeded, BankName} = Msg,
       %io:format("[MASTER FEEDBACK CUSTOMER] ~s requested a loan of $~B. from bank: ~p~n", [Name, LoanNeeded, BankName]),
@@ -52,7 +52,7 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc) ->
       case length(UpdatedCustomers) == length(CustomerInfo) of
         true ->
           io:format("SIMULATION DONE!~n"),
-          generate_report(UpdatedCustomers),
+          generate_report(UpdatedCustomers, BankLoanAcc),
           ok;
         false ->
           master_process(CustomerInfo, UpdatedCustomers, BankLoanAcc)
@@ -60,7 +60,7 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc) ->
 
 
 
-    %Bank Message
+  %Bank Message
     {process_bank, Pid, Msg} ->
       {CustomerName, NeededLoanAmount, BankName} = Msg,
       %io:format("[MASTER FEEDBACK BANK] The ~s bank granted amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
@@ -100,17 +100,17 @@ spawn_banks(BankInfo, MasterPID, CustomerInfo) ->
     fun({Name, Lending_amount}) ->
       BankPID = spawn(bank, process_bank, [MasterPID, Name, Lending_amount, CustomerInfo]),
       register(Name, BankPID) % Register the bank process with its name
-      %io:format("Registered bank process ~p with name ~p~n", [BankPID, Name]) % Print the registration information
+    %io:format("Registered bank process ~p with name ~p~n", [BankPID, Name]) % Print the registration information
     end,
     BankInfo).
 
 
-generate_report(CustomerDataList) ->
-  io:fwrite("~p DATALIST.~n", [CustomerDataList]),
-  {TotalObjective, TotalReceived, OriginalObjective} = calculate_totals(CustomerDataList),
-  print_report(CustomerDataList, TotalObjective, TotalReceived, OriginalObjective).
+generate_report(CustomerDataList, BankLoanAcc) ->
+  {TotalObjective, TotalReceived, OriginalObjective} = calculate_customer_totals(CustomerDataList),
+  {TotalOriginalLoan, TotalLoaned} = calculate_bank_totals(BankLoanAcc),
+  print_report(CustomerDataList, BankLoanAcc, TotalObjective, TotalReceived, OriginalObjective, TotalOriginalLoan, TotalLoaned).
 
-calculate_totals(CustomerDataList) ->
+calculate_customer_totals(CustomerDataList) ->
   lists:foldl(
     fun({_, AmountTakenSoFar, OriginalObjective}, {TotalObjective, TotalReceived, TotalOriginalObjective}) ->
       {TotalObjective + AmountTakenSoFar, TotalReceived + AmountTakenSoFar, TotalOriginalObjective + OriginalObjective}
@@ -119,14 +119,33 @@ calculate_totals(CustomerDataList) ->
     CustomerDataList
   ).
 
-print_report(CustomerDataList, TotalObjective, TotalReceived, OriginalObjective) ->
+calculate_bank_totals(BankLoanAcc) ->
+  lists:foldl(
+    fun({_BankName, LoanAmount}, {TotalOriginalLoan, TotalLoaned}) ->
+      {TotalOriginalLoan + LoanAmount, TotalLoaned + LoanAmount}
+    end,
+    {0, 0},
+    BankLoanAcc
+  ).
+
+print_report(CustomerDataList, BankLoanAcc, TotalObjective, TotalReceived, OriginalObjective, TotalOriginalLoan, TotalLoaned) ->
   io:format("Customers:~n"),
   print_customers(CustomerDataList),
   io:format("-----~n"),
-  io:format("Total: objective ~B, received ~B~n", [OriginalObjective, TotalObjective]).
+  io:format("Total: objective ~B, received ~B~n", [OriginalObjective, TotalObjective]),
+  io:format("Banks:~n"),
+  print_banks(BankLoanAcc),
+  io:format("-----~n"),
+  io:format("Total: original ~B, loaned ~B~n", [TotalOriginalLoan, TotalLoaned]).
 
 print_customers([]) ->
   ok;
 print_customers([{Name, AmountTakenSoFar, OriginalObjective} | Rest]) ->
   io:format("~s: objective ~B, received ~B~n", [Name, OriginalObjective, AmountTakenSoFar]),
   print_customers(Rest).
+
+print_banks([]) ->
+  ok;
+print_banks([{BankName, LoanAmount} | Rest]) ->
+  io:format("~s: original ~B, balance ~B~n", [BankName, LoanAmount, LoanAmount]),
+  print_banks(Rest).
