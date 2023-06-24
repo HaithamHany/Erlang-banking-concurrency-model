@@ -114,7 +114,7 @@ generate_report(CustomerDataList, BankLoanAcc) ->
 calculate_customer_totals(CustomerDataList) ->
   lists:foldl(
     fun({_, AmountTakenSoFar, OriginalObjective}, {TotalObjective, TotalReceived, TotalOriginalObjective}) ->
-      {TotalObjective + AmountTakenSoFar, TotalReceived + AmountTakenSoFar, TotalOriginalObjective + OriginalObjective}
+      {TotalObjective + OriginalObjective, TotalReceived + AmountTakenSoFar, TotalOriginalObjective + OriginalObjective}
     end,
     {0, 0, 0},
     CustomerDataList
@@ -122,8 +122,8 @@ calculate_customer_totals(CustomerDataList) ->
 
 calculate_bank_totals(BankLoanAcc) ->
   lists:foldl(
-    fun({_BankName, LoanAmount}, {TotalOriginalLoan, TotalLoaned}) ->
-      {TotalOriginalLoan + LoanAmount, TotalLoaned + LoanAmount}
+    fun({_BankName, LoanAmount, OriginalAmount}, {TotalOriginalLoan, TotalLoaned}) ->
+      {TotalOriginalLoan + OriginalAmount, TotalLoaned + LoanAmount}
     end,
     {0, 0},
     BankLoanAcc
@@ -133,7 +133,7 @@ print_report(CustomerDataList, BankLoanAcc, TotalObjective, TotalReceived, Origi
   io:format("Customers:~n"),
   print_customers(CustomerDataList),
   io:format("-----~n"),
-  io:format("Total: objective ~B, received ~B~n", [OriginalObjective, TotalObjective]),
+  io:format("Total: objective ~B, received ~B~n", [TotalObjective, TotalReceived]),
   io:format("Banks:~n"),
   print_banks(BankLoanAcc),
   io:format("-----~n"),
@@ -147,6 +147,7 @@ print_customers([{Name, AmountTakenSoFar, OriginalObjective} | Rest]) ->
 
 print_banks([]) ->
   ok;
-print_banks([{BankName, LoanAmount} | Rest]) ->
-  io:format("~s: original ~B, balance ~B~n", [BankName, LoanAmount, LoanAmount]),
+print_banks([{BankName, LoanAmount, OriginalAmount} | Rest]) ->
+  Balance = OriginalAmount - LoanAmount,
+  io:format("~s: original ~B, balance ~B~n", [BankName, OriginalAmount, Balance]),
   print_banks(Rest).
