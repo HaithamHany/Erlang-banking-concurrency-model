@@ -30,18 +30,27 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID, OriginalObjective) ->
 
   MaxLoanAmount = min(RandomLoanAmount, LoanNeeded),
 
-  {BankName, BankPID} = select_random_bank(BankIDs),
-  %io:fwrite("~s has an objective of ~p~n", [Name, LoanNeeded]),
-  io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars. Remaining Loan Needed: ~B~n", [Name, {BankName, BankPID}, MaxLoanAmount, LoanNeeded - MaxLoanAmount]),
+  case MaxLoanAmount of
+    0 -> % Exit the process when loan amount is 0
+      io:fwrite("OBJECTIVE MET FOR ~p~n", [Name]),
+      AmountTakenSoFar = OriginalObjective - LoanNeeded,
+      notify_master(MasterPID, Name, AmountTakenSoFar, OriginalObjective),
+      ok;
+    _ ->
+      {BankName, BankPID} = select_random_bank(BankIDs),
+      %io:fwrite("~s has an objective of ~p~n", [Name, LoanNeeded]),
+      io:fwrite("Customer ~s making a loan request to bank ~p for ~B dollars. Remaining Loan Needed: ~B~n", [Name, {BankName, BankPID}, MaxLoanAmount, LoanNeeded - MaxLoanAmount]),
 
-  %sendingBnak
-  BankPID ! {loan_request, Name, MaxLoanAmount},
+      %sendingBnak
+      BankPID ! {loan_request, Name, MaxLoanAmount},
 
-  %sending Master
-  Msg = {Name, MaxLoanAmount, BankName},
-  MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
+      %sending Master
+      Msg = {Name, MaxLoanAmount, BankName},
+      MasterPID ! {process_customer, self(), Msg}, % Include self() in the message
 
-  process_request(Name, BankIDs, LoanNeeded, MasterPID, BankName, MaxLoanAmount, OriginalObjective).
+      process_request(Name, BankIDs, LoanNeeded, MasterPID, BankName, MaxLoanAmount, OriginalObjective)
+  end.
+
 
 
 process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, RequestedAmount, OriginalObjective) ->
@@ -52,8 +61,7 @@ process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, Req
         0 -> % Loan objective met
           io:fwrite("OBJECTIVE MET FOR ~p~n", [Name]),
           AmountTakenSoFar = OriginalObjective - TotalLoanNeeded,
-          Msg = {Name, AmountTakenSoFar, OriginalObjective},
-          MasterPID ! {customer_done, self(), Msg}, % Include self() in the me
+          notify_master(MasterPID, Name, AmountTakenSoFar, OriginalObjective),
           ok;
         _ -> % Loan objective not met, make another request
           RemainingLoan = TotalLoanNeeded - RequestedAmount,
@@ -76,8 +84,7 @@ process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, Req
           io:fwrite("ORIGINAL OBJECTIVE ~p~n", [OriginalObjective]),
           io:fwrite("TOTAL OAD NEEDED ~p~n", [TotalLoanNeeded]),
           AmountTakenSoFar = OriginalObjective - TotalLoanNeeded,
-          CustomerData = {Name, AmountTakenSoFar, OriginalObjective},
-          MasterPID ! {customer_done, self(), CustomerData}, % Include self() in the message
+          notify_master(MasterPID, Name, AmountTakenSoFar, OriginalObjective),
           ok;
         _ -> % Make another request with updated bank list
           make_request(Name, UpdatedBankIDs, TotalLoanNeeded, MasterPID, OriginalObjective)
@@ -87,3 +94,6 @@ process_request(Name, BankIDs, TotalLoanNeeded, MasterPID, RejectedBankName, Req
 remove_rejected_bank(BankIDs, RejectedBankName) ->
   lists:filter(fun({BankName, _}) -> BankName /= RejectedBankName end, BankIDs).
 
+notify_master(MasterPID, Name, AmountTakenSoFar, OriginalObjective) ->
+  Msg = {Name, AmountTakenSoFar, OriginalObjective},
+  MasterPID ! {customer_done, self(), Msg}.
