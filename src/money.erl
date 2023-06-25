@@ -41,27 +41,7 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
     {customer_done, Pid, Msg} ->
       {Name, AmountTakenSoFar, OriginalObjective} = Msg,
       UpdatedCustomers = [Msg | CustomersDoneList],
-
-      case length(UpdatedCustomers) == length(CustomerInfo) of
-        true ->
-          %io:format("SIMULATION DONE!~n"),
-          NewBankList = lists:foldl(
-            fun(Tuple, Acc) ->
-              case lists:keyfind(element(1, Tuple), 1, Acc) of
-                false -> [Tuple | Acc];
-                _ -> Acc
-              end
-            end,
-            BankLoanAcc,
-            BankInfoTerms
-          ),
-          generate_report(UpdatedCustomers, NewBankList),
-          ok;
-        false ->
-          master_process(CustomerInfo, UpdatedCustomers, BankLoanAcc, BankInfoTerms)
-      end;
-
-
+      master_process(CustomerInfo, UpdatedCustomers, BankLoanAcc,BankInfoTerms);
 
   %Bank Message
     {process_bank, Pid, Msg} ->
@@ -75,9 +55,18 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
       {CustomerName, NeededLoanAmount, BankName} = Msg,
       io:format("$ The ~s bank denies a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       master_process(CustomerInfo, CustomersDoneList, BankLoanAcc,BankInfoTerms)
-  after 3000 ->
-    io:format("Timeout reached. No messages received within the specified time. Trying again.....~n"),
-    master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms)
+  after 1000 ->
+    NewBankList = lists:foldl(
+      fun(Tuple, Acc) ->
+        case lists:keyfind(element(1, Tuple), 1, Acc) of
+          false -> [Tuple | Acc];
+          _ -> Acc
+        end
+      end,
+      BankLoanAcc,
+      BankInfoTerms
+    ),
+    generate_report(CustomersDoneList, NewBankList)
   end.
 
 update_bank_loan_acc(BankLoanAcc, BankName, Amount, OriginalAmount) ->
@@ -91,8 +80,8 @@ spawn_customers(CustomerInfo, BankInfo, MasterPID) ->
   lists:foreach(
     fun({Name, LoanNeeded}) ->
       CustomerPID = spawn(customer, process_customer, [MasterPID, Name, LoanNeeded, BankInfo]),
-      register(Name, CustomerPID),
-      timer:sleep(200)
+      register(Name, CustomerPID)
+      %timer:sleep(200)
     end,
     CustomerInfo).
 
