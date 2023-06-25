@@ -81,7 +81,7 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
       master_process(CustomerInfo, CustomersDoneList, BankLoanAcc,BankInfoTerms)
   after 3000 -> % Timeout of 5000 milliseconds (adjust as needed)
     % Timeout handling code
-    io:format("Timeout reached. No messages received within the specified time.~n"),
+    io:format("Timeout reached. No messages received within the specified time. Trying again.....~n"),
     master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms)
   end.
 
