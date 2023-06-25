@@ -4,7 +4,6 @@
 process_customer(MasterPID, Name, LoanNeeded, BankInfo) ->
   BanksNamesWithIDs = lists:map(fun({BankName, _}) -> {BankName, whereis(BankName)} end, BankInfo),
 
-  %Random selection of loan and bank
   make_request(Name, BanksNamesWithIDs, LoanNeeded, MasterPID, LoanNeeded).
 
 generate_random_loan() ->
@@ -29,7 +28,7 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID, OriginalObjective) ->
   MaxLoanAmount = min(RandomLoanAmount, LoanNeeded),
 
   case MaxLoanAmount of
-    0 -> % Exit the process when loan amount is 0
+    0 ->
 
       AmountTakenSoFar = OriginalObjective - LoanNeeded,
       notify_master(MasterPID, Name, AmountTakenSoFar, OriginalObjective),
@@ -37,7 +36,7 @@ make_request(Name, BankIDs, LoanNeeded, MasterPID, OriginalObjective) ->
     _ ->
       {BankName, BankPID} = select_random_bank(BankIDs),
 
-      %sendingBnak
+      %sending Bank
       BankPID ! {loan_request, Name, MaxLoanAmount},
 
       %sending Master
