@@ -15,15 +15,19 @@ start(Args) ->
   io:fwrite("~n"),
   timer:sleep(500),
 
-  CustomersDoneList = [],
-  % Spawn money process
-  MasterPID = spawn(fun() -> master_process(CustomerInfoTerms, CustomersDoneList, [], NewBankInfoTerms) end),
+
 
   % Spawn Banks
-  spawn_banks(BankInfoTerms, MasterPID, CustomerInfoTerms),
+  spawn_banks(BankInfoTerms, self(), CustomerInfoTerms),
 
 % Spawn Customers
-  spawn_customers(CustomerInfoTerms, BankInfoTerms, MasterPID).
+  spawn_customers(CustomerInfoTerms, BankInfoTerms, self()),
+
+  CustomersDoneList = [],
+  % Spawn money process
+  master_process(CustomerInfoTerms, CustomersDoneList, [], NewBankInfoTerms).
+
+
 
 
 master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
@@ -41,6 +45,25 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
     {customer_done, Pid, Msg} ->
       {Name, AmountTakenSoFar, OriginalObjective} = Msg,
       UpdatedCustomers = [Msg | CustomersDoneList],
+
+      case length(UpdatedCustomers) == length(CustomerInfo) of
+        true ->
+          NewBankList = lists:foldl(
+            fun(Tuple, Acc) ->
+              case lists:keyfind(element(1, Tuple), 1, Acc) of
+                false -> [Tuple | Acc];
+                _ -> Acc
+              end
+            end,
+            BankLoanAcc,
+            BankInfoTerms
+          ),
+          generate_report(UpdatedCustomers, NewBankList),
+          exit(normal),
+          ok;
+        false ->
+          master_process(CustomerInfo, UpdatedCustomers, BankLoanAcc, BankInfoTerms)
+      end,
       master_process(CustomerInfo, UpdatedCustomers, BankLoanAcc,BankInfoTerms);
 
   %Bank Message
@@ -55,18 +78,6 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
       {CustomerName, NeededLoanAmount, BankName} = Msg,
       io:format("$ The ~s bank denies a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       master_process(CustomerInfo, CustomersDoneList, BankLoanAcc,BankInfoTerms)
-  after 1000 ->
-    NewBankList = lists:foldl(
-      fun(Tuple, Acc) ->
-        case lists:keyfind(element(1, Tuple), 1, Acc) of
-          false -> [Tuple | Acc];
-          _ -> Acc
-        end
-      end,
-      BankLoanAcc,
-      BankInfoTerms
-    ),
-    generate_report(CustomersDoneList, NewBankList)
   end.
 
 update_bank_loan_acc(BankLoanAcc, BankName, Amount, OriginalAmount) ->
