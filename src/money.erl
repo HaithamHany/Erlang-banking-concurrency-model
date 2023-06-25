@@ -79,7 +79,10 @@ master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms) ->
       %io:format("[MASTER FEEDBACK BANK] The ~s bank denied amount of $~B. to customer: ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       io:format("$ The ~s bank denies a loan of $~B to ~p~n", [BankName, NeededLoanAmount, CustomerName]),
       master_process(CustomerInfo, CustomersDoneList, BankLoanAcc,BankInfoTerms)
-
+  after 3000 -> % Timeout of 5000 milliseconds (adjust as needed)
+    % Timeout handling code
+    io:format("Timeout reached. No messages received within the specified time.~n"),
+    master_process(CustomerInfo, CustomersDoneList, BankLoanAcc, BankInfoTerms)
   end.
 
 update_bank_loan_acc(BankLoanAcc, BankName, Amount, OriginalAmount) ->
